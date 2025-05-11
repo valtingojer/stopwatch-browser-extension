@@ -79,7 +79,9 @@ document.addEventListener('DOMContentLoaded', function() {
       // Listen for state updates from background
       chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === 'stateUpdated') {
+          console.log('Popup received state update:', message.state);
           this.updateStateFromMessage(message.state);
+          sendResponse({ success: true });
         }
       });
     },
@@ -143,6 +145,18 @@ document.addEventListener('DOMContentLoaded', function() {
       
       startTimer() {
         if (!this.isRunning) {
+          // Update local state immediately
+          this.isRunning = true;
+          const startTime = Date.now() - this.time;
+          
+          // Start local timer immediately
+          if (this.timer) {
+            clearInterval(this.timer);
+          }
+          this.timer = setInterval(() => {
+            this.time = Date.now() - startTime;
+          }, 10);
+          
           // Send message to background to start timer
           chrome.runtime.sendMessage({ 
             action: 'startTimer',
@@ -153,6 +167,13 @@ document.addEventListener('DOMContentLoaded', function() {
       
       stopTimer() {
         if (this.isRunning) {
+          // Update local state immediately
+          this.isRunning = false;
+          if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+          }
+          
           // Send message to background to stop timer and add lap
           chrome.runtime.sendMessage({ 
             action: 'stopTimer',
@@ -162,6 +183,14 @@ document.addEventListener('DOMContentLoaded', function() {
       },
       
       resetTimer() {
+        // Update local state immediately
+        this.isRunning = false;
+        this.time = 0;
+        if (this.timer) {
+          clearInterval(this.timer);
+          this.timer = null;
+        }
+        
         // Send message to background to reset timer
         chrome.runtime.sendMessage({ action: 'resetTimer' });
       },
