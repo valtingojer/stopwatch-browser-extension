@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', function() {
         h('h1', 'Stopwatch'),
         h('div', { class: 'time-display' }, this.formattedTime),
         h('div', { class: 'controls' }, [
-          !this.isRunning ? h('button', { onClick: this.startTimer }, 'Start') : null,
-          this.isRunning ? h('button', { onClick: this.stopTimer }, 'Stop') : null,
+          h('button', { onClick: this.startTimer }, 'Start'),
+          h('button', { onClick: this.stopTimer }, 'Stop'),
           h('button', { onClick: this.resetTimer }, 'Reset')
         ]),
         h('div', { class: 'speed-control' }, [
@@ -33,8 +33,10 @@ document.addEventListener('DOMContentLoaded', function() {
           ])
         ]),
         h('div', { class: 'overlay-control' }, [
-          h('button', { onClick: this.toggleOverlay }, 
-            this.overlayActive ? 'Hide Overlay' : 'Show Overlay')
+          h('div', { class: 'overlay-buttons' }, [
+            h('button', { onClick: () => this.setOverlayState(true) }, 'Show Overlay'),
+            h('button', { onClick: () => this.setOverlayState(false) }, 'Hide Overlay')
+          ])
         ]),
         this.laps.length > 0 ? h('div', { class: 'lap-times' }, [
           h('h2', 'Lap Times'),
@@ -216,20 +218,18 @@ document.addEventListener('DOMContentLoaded', function() {
           });
         }
       },
-
-      toggleOverlay() {
-        const newState = !this.overlayActive;
-        this.overlayActive = newState; // Update local state immediately
+      setOverlayState(state) {
+        this.overlayActive = state; // Update local state immediately
         
         // Save state to Chrome storage
-        chrome.storage.local.set({ overlayState: newState });
+        chrome.storage.local.set({ overlayState: state });
         
         // Send message to content script
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           if (tabs[0]) {
             chrome.tabs.sendMessage(tabs[0].id, { 
               action: 'toggleOverlay', 
-              state: newState 
+              state: state 
             });
           }
         });

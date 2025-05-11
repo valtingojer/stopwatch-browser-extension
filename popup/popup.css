@@ -97,6 +97,19 @@ input[type="range"] {
   width: 100%;
 }
 
+.overlay-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  justify-content: center;
+}
+
 .lap-times {
   margin-top: 15px;
   width: 100%;
