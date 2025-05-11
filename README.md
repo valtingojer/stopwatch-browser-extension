@@ -1,16 +1,28 @@
 # Stopwatch Chrome Extension
 
-A feature-rich stopwatch extension for Chrome that provides both a popup timer and an overlay chronometer. Built with Vue.js (using CDN, no Node.js required).
+A specialized stopwatch extension for Chrome that tracks cycles of 10 steps with power counter and audio feedback. Features both a popup timer and an interactive overlay chronometer.
 
-## Features
+## Key Features
 
-- Traditional stopwatch with start, stop, and reset functionality
-- Lap time recording
-- Adjustable speed control (0.1x to 10x)
-- Draggable overlay chronometer with digital display
-- Persistent timer state using Chrome storage
-- Clean, responsive UI with dark theme
-- Context menu integration for quick overlay toggle
+- **10-Step Cycle Counter**: 
+  - Counts from 0 to 9 repeatedly
+  - Power counter increases after each complete cycle
+  - Audio feedback plays when cycle completes
+  - Perfect for tracking repetitive tasks or intervals
+
+- **Interactive Overlay**:
+  - Draggable digital display shows current count and power
+  - Stays on top of web content
+  - Play/Stop controls directly on overlay
+  - Position persists between sessions
+  - Quick toggle through context menu
+
+- **Popup Interface**:
+  - Traditional stopwatch functionality
+  - Lap time recording
+  - Adjustable speed control (0.1x to 10x)
+  - Overall time tracking
+  - Show/Hide overlay controls
 
 ## Project Structure
 
