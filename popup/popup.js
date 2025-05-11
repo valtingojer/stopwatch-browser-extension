@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
       },
       
       startTimer() {
-        if (!this.isRunning) {
+        if (!this.isRunning) {  // Only proceed if not already running
           // Update local state immediately
           this.isRunning = true;
           const startTime = Date.now() - this.time;
@@ -157,12 +157,33 @@ document.addEventListener('DOMContentLoaded', function() {
             this.time = Date.now() - startTime;
           }, 10);
           
-          // Send message to background to start timer
-          chrome.runtime.sendMessage({ 
-            action: 'startTimer',
-            currentTime: this.time
+          // Save state to Chrome storage
+          chrome.storage.local.set({ isRunning: true, startTime: startTime });
+          
+          // Send message to content script to start overlay counter
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]) {
+              // If overlay is hidden, show it first
+              if (!this.overlayActive) {
+                this.overlayActive = true;
+                chrome.storage.local.set({ overlayState: true });
+                
+                chrome.tabs.sendMessage(tabs[0].id, { 
+                  action: 'toggleOverlay', 
+                  state: true 
+                });
+              }
+              
+              // Start the overlay counter
+              chrome.tabs.sendMessage(tabs[0].id, { 
+                action: 'startOverlayCounter',
+                startTime: startTime,
+                source: 'popup'
+              });
+            }
           });
         }
+        // If already running, do nothing (ignore the play button press)
       },
       
       stopTimer() {
@@ -174,10 +195,24 @@ document.addEventListener('DOMContentLoaded', function() {
             this.timer = null;
           }
           
-          // Send message to background to stop timer and add lap
-          chrome.runtime.sendMessage({ 
-            action: 'stopTimer',
-            addLap: true
+          // Add to laps
+          this.laps.push(this.time);
+          
+          // Save state to Chrome storage
+          chrome.storage.local.set({ 
+            isRunning: false, 
+            time: this.time,
+            laps: this.laps
+          });
+          
+          // Send message to content script to stop overlay counter
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]) {
+              chrome.tabs.sendMessage(tabs[0].id, { 
+                action: 'stopOverlayCounter',
+                source: 'popup'
+              });
+            }
           });
         }
       },
