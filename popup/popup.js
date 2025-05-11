@@ -2,8 +2,43 @@
 document.addEventListener('DOMContentLoaded', function() {
   // Define the Vue application
   const app = Vue.createApp({
-    // Use the template with id 'stopwatch-template'
-    template: '#stopwatch-template',
+    // Use render function instead of template
+    render() {
+      const h = Vue.h;
+      
+      return h('div', { class: 'stopwatch-container' }, [
+        h('h1', 'Stopwatch'),
+        h('div', { class: 'time-display' }, this.formattedTime),
+        h('div', { class: 'controls' }, [
+          !this.isRunning ? h('button', { onClick: this.startTimer }, 'Start') : null,
+          this.isRunning ? h('button', { onClick: this.stopTimer }, 'Stop') : null,
+          h('button', { onClick: this.resetTimer }, 'Reset')
+        ]),
+        h('div', { class: 'speed-control' }, [
+          h('label', { for: 'speed' }, 'Speed (0.1x to 10.0x):'),
+          h('input', { 
+            type: 'number', 
+            id: 'speed', 
+            value: this.speed,
+            min: 0.1,
+            max: 10.0,
+            step: 0.1,
+            onInput: this.updateSpeed
+          })
+        ]),
+        h('div', { class: 'overlay-control' }, [
+          h('button', { onClick: this.toggleOverlay }, 
+            this.overlayActive ? 'Hide Overlay' : 'Show Overlay')
+        ]),
+        this.laps.length > 0 ? h('div', { class: 'lap-times' }, [
+          h('h2', 'Lap Times'),
+          h('ul', this.laps.map((lap, index) => 
+            h('li', `Lap ${index + 1}: ${this.formatTime(lap)}`)
+          )),
+          h('button', { onClick: this.clearLaps }, 'Clear Laps')
+        ]) : null
+      ]);
+    },
     
     // Options API pattern
     data() {
