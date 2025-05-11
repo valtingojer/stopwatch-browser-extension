@@ -178,36 +178,71 @@ function showTimeOnPage(time) {
   timerDisplay.textContent = time;
 }
 
-// Load initial state from Chrome storage
-chrome.storage.local.get(['overlayState', 'speed'], (result) => {
-  isOverlayActive = result.overlayState || false;
-  speed = result.speed || 1.0;
-  if (isOverlayActive) {
-    createOverlay();
+// Function to update the overlay state based on received state
+function updateOverlayState(state) {
+  // Update running state
+  if (state.isRunning !== undefined) {
+    isRunning = state.isRunning;
   }
-});
-
-// Listen for messages from the extension
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'showTime') {
-    // Display the current stopwatch time on the page
-    showTimeOnPage(message.time);
-    sendResponse({ success: true });
-  } else if (message.action === 'toggleOverlay') {
-    toggleOverlay(message.state);
-    sendResponse({ success: true });
-  } else if (message.action === 'updateSpeed') {
-    speed = message.speed;
+  
+  // Update speed
+  if (state.speed !== undefined) {
+    speed = state.speed;
+    
+    // If running, restart chronometer with new speed
     if (isRunning) {
       clearInterval(intervalId);
       const counterDisplay = document.querySelector('.counter');
       const powerDisplay = document.querySelector('.power');
-      startChronometer(counterDisplay, powerDisplay);
+      if (counterDisplay && powerDisplay) {
+        startChronometer(counterDisplay, powerDisplay);
+      }
     }
+  }
+  
+  // Update overlay visibility
+  if (state.overlayState !== undefined) {
+    toggleOverlay(state.overlayState);
+  }
+}
+
+// Load initial state from Chrome storage and set up sync
+function initializeState() {
+  chrome.runtime.sendMessage({ action: 'getState' }, (response) => {
+    if (response) {
+      isOverlayActive = response.overlayState || false;
+      isRunning = response.isRunning || false;
+      speed = response.speed || 1.0;
+      
+      if (isOverlayActive) {
+        createOverlay();
+        
+        // If timer is running, start the chronometer
+        if (isRunning) {
+          const counterDisplay = document.querySelector('.counter');
+          const powerDisplay = document.querySelector('.power');
+          if (counterDisplay && powerDisplay) {
+            startChronometer(counterDisplay, powerDisplay);
+          }
+        }
+      }
+    }
+  });
+}
+
+// Initialize state when content script loads
+initializeState();
+
+// Listen for messages from the extension
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'stateUpdated') {
+    updateOverlayState(message.state);
+    sendResponse({ success: true });
+  } else if (message.action === 'toggleOverlay') {
+    toggleOverlay(message.state);
     sendResponse({ success: true });
   } else if (message.action === 'startOverlayCounter') {
-    // Start the overlay counter if overlay is active
-    if (isOverlayActive && !isRunning) {
+    if (!isRunning) {
       isRunning = true;
       const counterDisplay = document.querySelector('.counter');
       const powerDisplay = document.querySelector('.power');
@@ -217,22 +252,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     sendResponse({ success: true });
   } else if (message.action === 'stopOverlayCounter') {
-    // Stop the overlay counter
     if (isRunning) {
       isRunning = false;
       clearInterval(intervalId);
-      
-      // Reset counter display if available
+    }
+    sendResponse({ success: true });
+  } else if (message.action === 'updateSpeed') {
+    speed = message.speed;
+    if (isRunning) {
+      clearInterval(intervalId);
       const counterDisplay = document.querySelector('.counter');
       const powerDisplay = document.querySelector('.power');
       if (counterDisplay && powerDisplay) {
-        counter = 0;
-        power = 0;
-        counterDisplay.textContent = counter;
-        powerDisplay.textContent = power;
+        startChronometer(counterDisplay, powerDisplay);
       }
     }
     sendResponse({ success: true });
   }
   return true;
+});
+
+// Modify the play button click handler
+playBtn.addEventListener('click', () => {
+  if (!isRunning) {
+    // Send message to background to start timer
+    chrome.runtime.sendMessage({ 
+      action: 'startTimer'
+    });
+  }
+});
+
+// Modify the stop button click handler
+stopBtn.addEventListener('click', () => {
+  if (isRunning) {
+    // Send message to background to stop timer and add lap
+    chrome.runtime.sendMessage({ 
+      action: 'stopTimer',
+      addLap: true
+    });
+  }
 });

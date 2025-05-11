@@ -54,7 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
         timer: null,
         laps: [],
         speed: 1.0,
-        overlayActive: false
+        overlayActive: false,
+        lastSyncTime: 0
       };
     },
     
@@ -64,79 +65,110 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     },
     
+    mounted() {
+      // Load saved state from background script
+      this.syncStateFromBackground();
+      
+      // Set up periodic sync to keep time updated
+      this.syncTimer = setInterval(() => {
+        if (this.isRunning) {
+          this.syncStateFromBackground();
+        }
+      }, 1000);
+      
+      // Listen for state updates from background
+      chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.action === 'stateUpdated') {
+          this.updateStateFromMessage(message.state);
+        }
+      });
+    },
+    
+    beforeUnmount() {
+      // Clear all timers when component is unmounted
+      clearInterval(this.timer);
+      clearInterval(this.syncTimer);
+    },
+    
     methods: {
-      startTimer() {
-        if (!this.isRunning) {
-          this.isRunning = true;
-          const startTime = Date.now() - this.time;
+      syncStateFromBackground() {
+        chrome.runtime.sendMessage({ action: 'getState' }, (response) => {
+          if (response) {
+            this.updateStateFromMessage(response);
+          }
+        });
+      },
+      
+      updateStateFromMessage(state) {
+        // Update timer state
+        if (state.isRunning !== undefined) {
+          this.isRunning = state.isRunning;
+        }
+        
+        // Update time
+        if (state.time !== undefined) {
+          this.time = state.time;
+        }
+        
+        // Update laps
+        if (state.laps !== undefined) {
+          this.laps = state.laps;
+        }
+        
+        // Update speed
+        if (state.speed !== undefined) {
+          this.speed = state.speed;
+        }
+        
+        // Update overlay state
+        if (state.overlayState !== undefined) {
+          this.overlayActive = state.overlayState;
+        }
+        
+        // If timer is running, update the local timer
+        if (this.isRunning) {
+          if (this.timer) {
+            clearInterval(this.timer);
+          }
           
+          const startTime = state.startTime || (Date.now() - this.time);
           this.timer = setInterval(() => {
             this.time = Date.now() - startTime;
           }, 10);
-          
-          // Save state to Chrome storage
-          chrome.storage.local.set({ isRunning: true, startTime: startTime });
-          
-          // Send message to content script to start overlay counter
-          // regardless of whether it's visible or not
-          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (tabs[0]) {
-              // If overlay is hidden, show it first
-              if (!this.overlayActive) {
-                this.overlayActive = true;
-                chrome.storage.local.set({ overlayState: true });
-                
-                chrome.tabs.sendMessage(tabs[0].id, { 
-                  action: 'toggleOverlay', 
-                  state: true 
-                });
-              }
-              
-              // Start the overlay counter
-              chrome.tabs.sendMessage(tabs[0].id, { 
-                action: 'startOverlayCounter',
-                startTime: startTime
-              });
-            }
+        } else if (!this.isRunning && this.timer) {
+          clearInterval(this.timer);
+          this.timer = null;
+        }
+      },
+      
+      startTimer() {
+        if (!this.isRunning) {
+          // Send message to background to start timer
+          chrome.runtime.sendMessage({ 
+            action: 'startTimer',
+            currentTime: this.time
           });
         }
       },
       
       stopTimer() {
         if (this.isRunning) {
-          clearInterval(this.timer);
-          this.isRunning = false;
-          this.laps.push(this.time);
-          
-          // Save state to Chrome storage
-          chrome.storage.local.set({ 
-            isRunning: false, 
-            time: this.time,
-            laps: this.laps
-          });
-          
-          // Send message to content script to stop overlay counter
-          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (tabs[0]) {
-              chrome.tabs.sendMessage(tabs[0].id, { 
-                action: 'stopOverlayCounter'
-              });
-            }
+          // Send message to background to stop timer and add lap
+          chrome.runtime.sendMessage({ 
+            action: 'stopTimer',
+            addLap: true
           });
         }
       },
       
       resetTimer() {
-        clearInterval(this.timer);
-        this.time = 0;
-        this.isRunning = false;
-        
-        // Save state to Chrome storage
-        chrome.storage.local.set({ 
-          isRunning: false, 
-          time: 0,
-          startTime: null
-        });
+        // Send message to background to reset timer
+        chrome.runtime.sendMessage({ action: 'resetTimer' });
+      },
+      
+      clearLaps() {
+        // Send message to background to clear laps
+        chrome.runtime.sendMessage({ action: 'clearLaps' });
       },
       
       formatTime(ms) {
@@ -146,11 +178,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const milliseconds = Math.floor((ms % 1000) / 10);
         
         return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
-      },
-      
-      clearLaps() {
-        this.laps = [];
-        chrome.storage.local.set({ laps: [] });
       },
       
       handleSpeedInput(event) {
@@ -180,34 +207,20 @@ document.addEventListener('DOMContentLoaded', function() {
           speedSlider.value = this.speed;
         }
         
-        // Save to storage
-        chrome.storage.local.set({ speed: this.speed });
-        
-        // Send message to content script to update speed
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]) {
-            chrome.tabs.sendMessage(tabs[0].id, { 
-              action: 'updateSpeed', 
-              speed: this.speed 
-            });
-          }
+        // Send message to background to update speed
+        chrome.runtime.sendMessage({ 
+          action: 'updateSpeed', 
+          speed: this.speed 
         });
       },
       
       toggleOverlay() {
-        this.overlayActive = !this.overlayActive;
+        const newState = !this.overlayActive;
         
-        // Save to storage
-        chrome.storage.local.set({ overlayState: this.overlayActive });
-        
-        // Send message to content script to toggle overlay
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]) {
-            chrome.tabs.sendMessage(tabs[0].id, { 
-              action: 'toggleOverlay', 
-              state: this.overlayActive 
-            });
-          }
+        // Send message to background to toggle overlay
+        chrome.runtime.sendMessage({ 
+          action: 'toggleOverlay', 
+          state: newState 
         });
       }
     },
