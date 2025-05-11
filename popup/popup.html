@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stopwatch Extension</title>
+  <link rel="stylesheet" href="../styles/styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Vue template -->
+    <template id="stopwatch-template">
+      <div class="stopwatch-container">
+        <h1>Stopwatch</h1>
+        <div class="time-display">{{ formattedTime }}</div>
+        <div class="controls">
+          <button @click="startTimer" v-if="!isRunning">Start</button>
+          <button @click="stopTimer" v-if="isRunning">Stop</button>
+          <button @click="resetTimer">Reset</button>
+        </div>
+        <div class="lap-times" v-if="laps.length > 0">
+          <h2>Lap Times</h2>
+          <ul>
+            <li v-for="(lap, index) in laps" :key="index">Lap {{ index + 1 }}: {{ formatTime(lap) }}</li>
+          </ul>
+          <button @click="clearLaps">Clear Laps</button>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Vue.js from CDN -->
+  <script src="assets/vue.global.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
