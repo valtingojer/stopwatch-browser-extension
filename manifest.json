@@ -3,6 +3,11 @@
   "name": "Stopwatch Extension",
   "version": "1.0",
   "description": "A 0 to 9 stopwatch extension",
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {
