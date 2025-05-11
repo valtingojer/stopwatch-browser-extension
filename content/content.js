@@ -3,17 +3,145 @@
 // This script runs in the context of web pages
 // It can interact with the page's DOM and communicate with the extension
 
-// Listen for messages from the extension
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'showTime') {
-    // Example: Display the current stopwatch time on the page
-    showTimeOnPage(message.time);
-    sendResponse({ success: true });
-  }
-  return true;
-});
+let isOverlayActive = false;
+let isRunning = false;
+let counter = 0;
+let power = 0;
+let speed = 1.0;
+let intervalId = null;
 
-// Function to display the stopwatch time on the page (example functionality)
+// Function to create the chronometer overlay
+function createOverlay() {
+  // Add styles to the page
+  const styleElement = document.createElement('style');
+  styleElement.textContent = `
+    #chronometer-overlay {
+      position: fixed;
+      top: 120px;
+      right: 120px;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 10px;
+      border-radius: 5px;
+    }
+    
+    .chronometer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .digits {
+      font-family: monospace, sans-serif;
+      font-size: 100px;
+      color: #ff4500;
+      line-height: 100px;
+    }
+    
+    .power {
+      font-size: 40px;
+      vertical-align: super;
+    }
+    
+    .buttons {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+    
+    .play-btn, .stop-btn {
+      padding: 5px 10px;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    
+    .play-btn:hover, .stop-btn:hover {
+      background: #555;
+    }
+  `;
+  document.head.appendChild(styleElement);
+
+  // Create overlay element
+  const overlay = document.createElement('div');
+  overlay.id = 'chronometer-overlay';
+  overlay.innerHTML = `
+    <div class="chronometer">
+      <span class="digits">
+        <span class="counter">0</span><sup class="power">0</sup>
+      </span>
+      <div class="buttons">
+        <button class="play-btn">Play</button>
+        <button class="stop-btn">Stop</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  // Add event listeners
+  const playBtn = overlay.querySelector('.play-btn');
+  const stopBtn = overlay.querySelector('.stop-btn');
+  const counterDisplay = overlay.querySelector('.counter');
+  const powerDisplay = overlay.querySelector('.power');
+
+  playBtn.addEventListener('click', () => {
+    if (!isRunning) {
+      isRunning = true;
+      startChronometer(counterDisplay, powerDisplay);
+    }
+  });
+
+  stopBtn.addEventListener('click', () => {
+    if (isRunning) {
+      isRunning = false;
+      clearInterval(intervalId);
+      counter = 0;
+      power = 0;
+      counterDisplay.textContent = counter;
+      powerDisplay.textContent = power;
+    }
+  });
+}
+
+// Function to start the chronometer
+function startChronometer(counterDisplay, powerDisplay) {
+  intervalId = setInterval(() => {
+    counter++;
+    if (counter > 9) {
+      counter = 0;
+      power++;
+      if (power > 9) {
+        power = 0;
+      }
+      powerDisplay.textContent = power;
+    }
+    counterDisplay.textContent = counter;
+  }, 1000 / speed); // 1000ms divided by speed
+}
+
+// Function to toggle the overlay
+function toggleOverlay(state) {
+  if (state === isOverlayActive) return; // Do nothing if state doesn't change
+  isOverlayActive = state;
+
+  if (isOverlayActive) {
+    createOverlay();
+  } else {
+    const overlay = document.getElementById('chronometer-overlay');
+    if (overlay) {
+      overlay.remove();
+      clearInterval(intervalId);
+      isRunning = false;
+      counter = 0;
+      power = 0;
+    }
+  }
+  chrome.storage.local.set({ overlayState: isOverlayActive });
+}
+
+// Function to display the stopwatch time on the page (original functionality)
 function showTimeOnPage(time) {
   // Check if our timer display already exists
   let timerDisplay = document.getElementById('stopwatch-extension-display');
@@ -37,3 +165,34 @@ function showTimeOnPage(time) {
   // Update the display with the current time
   timerDisplay.textContent = time;
 }
+
+// Load initial state from Chrome storage
+chrome.storage.local.get(['overlayState', 'speed'], (result) => {
+  isOverlayActive = result.overlayState || false;
+  speed = result.speed || 1.0;
+  if (isOverlayActive) {
+    createOverlay();
+  }
+});
+
+// Listen for messages from the extension
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'showTime') {
+    // Display the current stopwatch time on the page
+    showTimeOnPage(message.time);
+    sendResponse({ success: true });
+  } else if (message.action === 'toggleOverlay') {
+    toggleOverlay(message.state);
+    sendResponse({ success: true });
+  } else if (message.action === 'updateSpeed') {
+    speed = message.speed;
+    if (isRunning) {
+      clearInterval(intervalId);
+      const counterDisplay = document.querySelector('.counter');
+      const powerDisplay = document.querySelector('.power');
+      startChronometer(counterDisplay, powerDisplay);
+    }
+    sendResponse({ success: true });
+  }
+  return true;
+});

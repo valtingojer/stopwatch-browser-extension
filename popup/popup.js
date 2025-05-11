@@ -11,7 +11,9 @@ document.addEventListener('DOMContentLoaded', function() {
         time: 0,
         isRunning: false,
         timer: null,
-        laps: []
+        laps: [],
+        speed: 1.0,
+        overlayActive: false
       };
     },
     
@@ -76,14 +78,58 @@ document.addEventListener('DOMContentLoaded', function() {
       clearLaps() {
         this.laps = [];
         chrome.storage.local.set({ laps: [] });
+      },
+      
+      updateSpeed() {
+        // Ensure speed is within valid range
+        if (this.speed < 0.1) this.speed = 0.1;
+        if (this.speed > 10.0) this.speed = 10.0;
+        
+        // Save to storage
+        chrome.storage.local.set({ speed: this.speed });
+        
+        // Send message to content script to update speed
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, { 
+              action: 'updateSpeed', 
+              speed: this.speed 
+            });
+          }
+        });
+      },
+      
+      toggleOverlay() {
+        this.overlayActive = !this.overlayActive;
+        
+        // Save to storage
+        chrome.storage.local.set({ overlayState: this.overlayActive });
+        
+        // Send message to content script to toggle overlay
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, { 
+              action: 'toggleOverlay', 
+              state: this.overlayActive 
+            });
+          }
+        });
       }
     },
     
     mounted() {
       // Load saved state from Chrome storage
-      chrome.storage.local.get(['isRunning', 'time', 'startTime', 'laps'], (result) => {
+      chrome.storage.local.get(['isRunning', 'time', 'startTime', 'laps', 'speed', 'overlayState'], (result) => {
         if (result.laps) {
           this.laps = result.laps;
+        }
+        
+        if (result.speed) {
+          this.speed = result.speed;
+        }
+        
+        if (result.overlayState) {
+          this.overlayActive = result.overlayState;
         }
         
         if (result.isRunning) {
