@@ -41,6 +41,10 @@
 
   .close-btn{
     color: wheat;
+    background: transparent;
+    border-radius: 50%;
+    outline: none;
+    border: none;
   }
   
   .play-btn, .stop-btn {
