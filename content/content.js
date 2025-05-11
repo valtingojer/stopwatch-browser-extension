@@ -184,6 +184,9 @@ function createOverlay() {
 }
 
 // Function to start the chronometer
+// Add this at the top with other global variables
+let audio = new Audio(chrome.runtime.getURL('assets/toc.mp3'));
+
 function startChronometer(counterDisplay, powerDisplay) {
   intervalId = setInterval(() => {
     counter++;
@@ -194,6 +197,9 @@ function startChronometer(counterDisplay, powerDisplay) {
         power = 0;
       }
       powerDisplay.textContent = power;
+      // Play sound when counter resets to 0
+      audio.currentTime = 0; // Reset audio to start
+      audio.play().catch(err => console.log('Error playing sound:', err));
     }
     counterDisplay.textContent = counter;
   }, 1000 / speed); // 1000ms divided by speed
