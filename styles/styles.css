@@ -1,0 +1,63 @@
+#chronometer-overlay {
+    position: fixed;
+    top: 120px;
+    right: 120px;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 10px;
+    border-radius: 5px;
+    cursor: grab;
+  }
+  
+  #chronometer-overlay:active {
+    cursor: grabbing;
+  }
+
+  .chronometer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+  }
+  
+  .digits {
+    font-family: 'Digital-7', monospace, sans-serif; /* Você pode usar uma fonte como "Digital-7" ou "DS-Digital" */
+    font-size: 100px;
+    color: #ff4500; /* Laranja clássico de relógio digital */
+    line-height: 100px;
+  }
+  
+  .power {
+    font-size: 40px;
+    vertical-align: super;
+  }
+  
+  .buttons {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+    pointer-events: all;
+  }
+
+  .close-btn{
+    color: wheat;
+    background: transparent;
+    border-radius: 50%;
+    outline: none;
+    border: none;
+  }
+  
+  .play-btn, .stop-btn {
+    padding: 5px 10px;
+    background: #333;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  
+  .play-btn:hover, .stop-btn:hover {
+    background: #555;
+  }
+
+  
