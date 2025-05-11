@@ -20,7 +20,7 @@ function createOverlay() {
       top: 120px;
       right: 120px;
       z-index: 9999;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(30, 30, 30, 0.9);
       padding: 10px;
       border-radius: 5px;
     }
@@ -34,7 +34,7 @@ function createOverlay() {
     .digits {
       font-family: monospace, sans-serif;
       font-size: 100px;
-      color: #ff4500;
+      color: #64ffda;
       line-height: 100px;
     }
     
@@ -51,15 +51,15 @@ function createOverlay() {
     
     .play-btn, .stop-btn {
       padding: 5px 10px;
-      background: #333;
+      background: #4285f4;
       color: white;
       border: none;
-      border-radius: 3px;
+      border-radius: 4px;
       cursor: pointer;
     }
     
     .play-btn:hover, .stop-btn:hover {
-      background: #555;
+      background: #3367d6;
     }
   `;
   document.head.appendChild(styleElement);
@@ -193,6 +193,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       startChronometer(counterDisplay, powerDisplay);
     }
     sendResponse({ success: true });
+  } else if (message.action === 'startOverlayCounter') {
+    // Start the overlay counter if overlay is active
+    if (isOverlayActive && !isRunning) {
+      isRunning = true;
+      const counterDisplay = document.querySelector('.counter');
+      const powerDisplay = document.querySelector('.power');
+      if (counterDisplay && powerDisplay) {
+        startChronometer(counterDisplay, powerDisplay);
+      }
+    }
+    sendResponse({ success: true });
   }
   return true;
+});
+
+// Modify the play button event listener in createOverlay function
+playBtn.addEventListener('click', () => {
+  if (!isRunning) {
+    isRunning = true;
+    startChronometer(counterDisplay, powerDisplay);
+    
+    // Notify popup to start its timer too
+    chrome.runtime.sendMessage({ 
+      action: 'startPopupTimer'
+    });
+  }
 });

@@ -76,6 +76,28 @@ document.addEventListener('DOMContentLoaded', function() {
           
           // Save state to Chrome storage
           chrome.storage.local.set({ isRunning: true, startTime: startTime });
+          
+          // Show overlay if it's hidden and start the overlay counter
+          if (!this.overlayActive) {
+            this.overlayActive = true;
+            chrome.storage.local.set({ overlayState: true });
+            
+            // Send message to content script to show and start overlay
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+              if (tabs[0]) {
+                chrome.tabs.sendMessage(tabs[0].id, { 
+                  action: 'toggleOverlay', 
+                  state: true 
+                });
+                
+                // Also send message to start the overlay counter
+                chrome.tabs.sendMessage(tabs[0].id, { 
+                  action: 'startOverlayCounter',
+                  startTime: startTime
+                });
+              }
+            });
+          }
         }
       },
       
@@ -220,4 +242,20 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Mount the Vue application
   app.mount('#app');
+  
+  // Listen for messages from content script
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'startPopupTimer') {
+      // Get the Vue instance and start the timer
+      const vueApp = document.querySelector('#app').__vue_app__;
+      if (vueApp) {
+        const vm = vueApp._instance.proxy;
+        if (!vm.isRunning) {
+          vm.startTimer();
+        }
+      }
+      sendResponse({ success: true });
+    }
+    return true;
+  });
 });
