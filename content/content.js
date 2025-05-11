@@ -16,7 +16,6 @@ let overlayPosition = { x: 120, y: 120 };
 let isDragging = false;
 let dragOffset = { x: 0, y: 0 };
 
-// Update the style in createOverlay function
 function createOverlay() {
   const styleElement = document.createElement('style');
   styleElement.textContent = `
@@ -35,6 +34,7 @@ function createOverlay() {
       display: flex;
       flex-direction: column;
       align-items: center;
+      pointer-events: none;
     }
     
     .digits {
@@ -42,17 +42,20 @@ function createOverlay() {
       font-size: 100px;
       color: #64ffda;
       line-height: 100px;
+      pointer-events: none;
     }
     
     .power {
       font-size: 40px;
       vertical-align: super;
+      pointer-events: none;
     }
     
     .buttons {
       margin-top: 10px;
       display: flex;
       gap: 10px;
+      pointer-events: all;
     }
     
     .play-btn, .stop-btn {
@@ -73,12 +76,13 @@ function createOverlay() {
       top: 5px;
       right: 5px;
       background: transparent;
-      color: #fff;
+      color: #64ffda;
       border: none;
       cursor: pointer;
       font-size: 16px;
       padding: 2px 6px;
       border-radius: 3px;
+      pointer-events: all;
     }
     
     .close-btn:hover {

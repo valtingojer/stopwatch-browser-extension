@@ -6,12 +6,18 @@
     background: rgba(0, 0, 0, 0.8);
     padding: 10px;
     border-radius: 5px;
+    cursor: grab;
   }
   
+  #chronometer-overlay:active {
+    cursor: grabbing;
+  }
+
   .chronometer {
     display: flex;
     flex-direction: column;
     align-items: center;
+    pointer-events: none;
   }
   
   .digits {
@@ -30,6 +36,11 @@
     margin-top: 10px;
     display: flex;
     gap: 10px;
+    pointer-events: all;
+  }
+
+  .close-btn{
+    color: wheat;
   }
   
   .play-btn, .stop-btn {
@@ -44,3 +55,5 @@
   .play-btn:hover, .stop-btn:hover {
     background: #555;
   }
+
+  
