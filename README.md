@@ -1,13 +1,16 @@
 # Stopwatch Chrome Extension
 
-A simple stopwatch extension for Chrome built with Vue.js (using CDN, no Node.js required).
+A feature-rich stopwatch extension for Chrome that provides both a popup timer and an overlay chronometer. Built with Vue.js (using CDN, no Node.js required).
 
 ## Features
 
-- Start, stop, and reset functionality
+- Traditional stopwatch with start, stop, and reset functionality
 - Lap time recording
+- Adjustable speed control (0.1x to 10x)
+- Draggable overlay chronometer with digital display
 - Persistent timer state using Chrome storage
-- Clean, responsive UI
+- Clean, responsive UI with dark theme
+- Context menu integration for quick overlay toggle
 
 ## Project Structure
 
@@ -37,7 +40,7 @@ stopwatch-browser-extenssion/
 
 ## Development
 
-This extension uses Vue.js directly from CDN without requiring Node.js or any build tools. To modify the extension:
+This extension uses Vue.js file downloaded directly from CDN without requiring Node.js or any build tools. To modify the extension:
 
 1. Edit the files directly
 2. Reload the extension in Chrome's extension management page
