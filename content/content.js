@@ -322,6 +322,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (isRunning) {
       isRunning = false;
       clearInterval(intervalId);
+      counter = 0;
+      power = 0;
+      
+      // Update the display if overlay exists
+      const counterDisplay = document.querySelector('.counter');
+      const powerDisplay = document.querySelector('.power');
+      if (counterDisplay && powerDisplay) {
+        counterDisplay.textContent = counter;
+        powerDisplay.textContent = power;
+      }
     }
     sendResponse({ success: true });
   } else if (message.action === 'updateSpeed') {
@@ -337,25 +347,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
   }
   return true;
-});
-
-// Modify the play button click handler
-playBtn.addEventListener('click', () => {
-  if (!isRunning) {
-    // Send message to background to start timer
-    chrome.runtime.sendMessage({ 
-      action: 'startTimer'
-    });
-  }
-});
-
-// Modify the stop button click handler
-stopBtn.addEventListener('click', () => {
-  if (isRunning) {
-    // Send message to background to stop timer and add lap
-    chrome.runtime.sendMessage({ 
-      action: 'stopTimer',
-      addLap: true
-    });
-  }
 });
