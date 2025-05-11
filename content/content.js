@@ -11,18 +11,24 @@ let speed = 1.0;
 let intervalId = null;
 
 // Function to create the chronometer overlay
+// Add these variables at the top with other global variables
+let overlayPosition = { x: 120, y: 120 };
+let isDragging = false;
+let dragOffset = { x: 0, y: 0 };
+
+// Update the style in createOverlay function
 function createOverlay() {
-  // Add styles to the page
   const styleElement = document.createElement('style');
   styleElement.textContent = `
     #chronometer-overlay {
       position: fixed;
-      top: 120px;
-      right: 120px;
+      top: ${overlayPosition.y}px;
+      right: ${overlayPosition.x}px;
       z-index: 9999;
       background: rgba(30, 30, 30, 0.9);
       padding: 10px;
       border-radius: 5px;
+      cursor: move;
     }
     
     .chronometer {
@@ -61,13 +67,30 @@ function createOverlay() {
     .play-btn:hover, .stop-btn:hover {
       background: #3367d6;
     }
+    
+    .close-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: transparent;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
   `;
-  document.head.appendChild(styleElement);
-
-  // Create overlay element
+  
+  // Update overlay HTML
   const overlay = document.createElement('div');
   overlay.id = 'chronometer-overlay';
   overlay.innerHTML = `
+    <button class="close-btn">×</button>
     <div class="chronometer">
       <span class="digits">
         <span class="counter">0</span><sup class="power">0</sup>
@@ -78,8 +101,47 @@ function createOverlay() {
       </div>
     </div>
   `;
+  
   document.body.appendChild(overlay);
-
+  
+  // Add close button handler
+  const closeBtn = overlay.querySelector('.close-btn');
+  closeBtn.addEventListener('click', () => {
+    isOverlayActive = false;
+    chrome.storage.local.set({ overlayState: false });
+    overlay.remove();
+  });
+  
+  // Add drag functionality
+  overlay.addEventListener('mousedown', (e) => {
+    if (e.target === overlay || e.target.classList.contains('chronometer')) {
+      isDragging = true;
+      const rect = overlay.getBoundingClientRect();
+      dragOffset.x = e.clientX - rect.left;
+      dragOffset.y = e.clientY - rect.top;
+    }
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      const newX = e.clientX - dragOffset.x;
+      const newY = e.clientY - dragOffset.y;
+      overlay.style.left = `${newX}px`;
+      overlay.style.top = `${newY}px`;
+      overlay.style.right = 'auto';
+    }
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      const rect = overlay.getBoundingClientRect();
+      overlayPosition = { x: rect.left, y: rect.top };
+      // Save position to storage
+      chrome.storage.local.set({ overlayPosition });
+    }
+  });
+  
   // Add event listeners
   const playBtn = overlay.querySelector('.play-btn');
   const stopBtn = overlay.querySelector('.stop-btn');
@@ -213,6 +275,7 @@ function initializeState() {
       isOverlayActive = response.overlayState || false;
       isRunning = response.isRunning || false;
       speed = response.speed || 1.0;
+      overlayPosition = response.overlayPosition || { x: 120, y: 120 };
       
       if (isOverlayActive) {
         createOverlay();

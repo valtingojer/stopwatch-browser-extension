@@ -216,7 +216,24 @@ document.addEventListener('DOMContentLoaded', function() {
           });
         }
       },
-      
+
+      toggleOverlay() {
+        const newState = !this.overlayActive;
+        this.overlayActive = newState; // Update local state immediately
+        
+        // Save state to Chrome storage
+        chrome.storage.local.set({ overlayState: newState });
+        
+        // Send message to content script
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, { 
+              action: 'toggleOverlay', 
+              state: newState 
+            });
+          }
+        });
+      },
       resetTimer() {
         // Update local state immediately
         this.isRunning = false;
