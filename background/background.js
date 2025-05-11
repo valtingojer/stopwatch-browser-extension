@@ -48,4 +48,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true; // Required for async sendResponse
   }
+  
+  // Handle start timer request from overlay
+  else if (message.action === 'startTimer' && message.source === 'overlay') {
+    const startTime = Date.now();
+    
+    // Save state to Chrome storage
+    chrome.storage.local.set({ 
+      isRunning: true, 
+      startTime: startTime,
+      overlayState: true
+    });
+    
+    // No need to send to popup as it's not open
+    console.log('Timer started from overlay');
+  }
+  
+  // Handle stop timer request from overlay
+  else if (message.action === 'stopTimer' && message.source === 'overlay') {
+    // Get current time
+    chrome.storage.local.get(['startTime'], (result) => {
+      if (result.startTime) {
+        const elapsedTime = Date.now() - result.startTime;
+        
+        // Save state to Chrome storage
+        chrome.storage.local.get(['laps'], (lapResult) => {
+          const laps = lapResult.laps || [];
+          laps.push(elapsedTime);
+          
+          chrome.storage.local.set({ 
+            isRunning: false, 
+            time: elapsedTime,
+            laps: laps
+          });
+        });
+      }
+    });
+    
+    console.log('Timer stopped from overlay');
+  }
 });

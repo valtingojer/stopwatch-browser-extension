@@ -91,9 +91,10 @@ function createOverlay() {
       isRunning = true;
       startChronometer(counterDisplay, powerDisplay);
       
-      // Notify popup to start its timer too
+      // Notify background script to start timer
       chrome.runtime.sendMessage({ 
-        action: 'startPopupTimer'
+        action: 'startTimer',
+        source: 'overlay' // Indicate this message came from the overlay
       });
     }
   });
@@ -107,9 +108,10 @@ function createOverlay() {
       counterDisplay.textContent = counter;
       powerDisplay.textContent = power;
       
-      // Notify popup to stop its timer too
+      // Notify background script to stop timer
       chrome.runtime.sendMessage({ 
-        action: 'stopPopupTimer'
+        action: 'stopTimer',
+        source: 'overlay' // Indicate this message came from the overlay
       });
     }
   });

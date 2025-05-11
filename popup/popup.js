@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', function() {
           this.speed = result.speed;
         }
         
-        if (result.overlayState) {
+        if (result.overlayState !== undefined) {
           this.overlayActive = result.overlayState;
         }
         
@@ -238,6 +238,34 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (result.time) {
           // Just restore the time if it wasn't running
           this.time = result.time;
+        }
+      });
+      
+      // Listen for messages from background script
+      chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.action === 'timerStateChanged') {
+          // Reload state from storage
+          chrome.storage.local.get(['isRunning', 'time', 'startTime', 'laps'], (result) => {
+            if (result.isRunning && !this.isRunning) {
+              // Start timer if it should be running
+              this.isRunning = true;
+              const startTime = result.startTime;
+              
+              this.timer = setInterval(() => {
+                this.time = Date.now() - startTime;
+              }, 10);
+            } else if (!result.isRunning && this.isRunning) {
+              // Stop timer if it should be stopped
+              clearInterval(this.timer);
+              this.isRunning = false;
+              this.time = result.time;
+            }
+            
+            // Update laps
+            if (result.laps) {
+              this.laps = result.laps;
+            }
+          });
         }
       });
     },
