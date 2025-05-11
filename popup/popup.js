@@ -15,16 +15,22 @@ document.addEventListener('DOMContentLoaded', function() {
           h('button', { onClick: this.resetTimer }, 'Reset')
         ]),
         h('div', { class: 'speed-control' }, [
-          h('label', { for: 'speed' }, 'Speed (0.1x to 10.0x):'),
+          h('label', 'Speed Control:'),
+          h('div', { class: 'speed-display' }, `${this.speed.toFixed(1)}x`),
           h('input', { 
-            type: 'number', 
-            id: 'speed', 
+            type: 'range', 
+            class: '',
+            id: 'speed-slider', 
             value: this.speed,
             min: 0.1,
             max: 10.0,
             step: 0.1,
-            onInput: this.updateSpeed
-          })
+            onInput: this.handleSpeedInput
+          }),
+          h('div', { class: 'speed-buttons' }, [
+            h('button', { onClick: this.decreaseSpeed }, '-'),
+            h('button', { onClick: this.increaseSpeed }, '+')
+          ])
         ]),
         h('div', { class: 'overlay-control' }, [
           h('button', { onClick: this.toggleOverlay }, 
@@ -115,10 +121,32 @@ document.addEventListener('DOMContentLoaded', function() {
         chrome.storage.local.set({ laps: [] });
       },
       
-      updateSpeed() {
+      handleSpeedInput(event) {
+        this.updateSpeedValue(parseFloat(event.target.value));
+      },
+      
+      increaseSpeed() {
+        let newSpeed = Math.min(10.0, this.speed + 0.1);
+        this.updateSpeedValue(parseFloat(newSpeed.toFixed(1)));
+      },
+      
+      decreaseSpeed() {
+        let newSpeed = Math.max(0.1, this.speed - 0.1);
+        this.updateSpeedValue(parseFloat(newSpeed.toFixed(1)));
+      },
+      
+      updateSpeedValue(newSpeed) {
         // Ensure speed is within valid range
-        if (this.speed < 0.1) this.speed = 0.1;
-        if (this.speed > 10.0) this.speed = 10.0;
+        if (newSpeed < 0.1) newSpeed = 0.1;
+        if (newSpeed > 10.0) newSpeed = 10.0;
+        
+        this.speed = newSpeed;
+        
+        // Update the hidden input value
+        const speedSlider = document.getElementById('speed-slider');
+        if (speedSlider) {
+          speedSlider.value = this.speed;
+        }
         
         // Save to storage
         chrome.storage.local.set({ speed: this.speed });
