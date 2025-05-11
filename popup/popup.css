@@ -105,6 +105,11 @@ input[type="range"] {
   border-radius: 5px;
 }
 
+.lap-times ul {
+    height: 70px;
+    overflow-y: auto;
+}
+
 .lap-times h2 {
   font-size: 1.2rem;
   margin-bottom: 5px;
