@@ -204,8 +204,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     }
     sendResponse({ success: true });
+  } else if (message.action === 'stopOverlayCounter') {
+    // Stop the overlay counter
+    if (isRunning) {
+      isRunning = false;
+      clearInterval(intervalId);
+    }
+    sendResponse({ success: true });
   }
   return true;
+});
+
+// In your createOverlay function, update the stop button event listener:
+stopBtn.addEventListener('click', () => {
+  if (isRunning) {
+    isRunning = false;
+    clearInterval(intervalId);
+    
+    // Notify popup to stop its timer too
+    chrome.runtime.sendMessage({ 
+      action: 'stopPopupTimer'
+    });
+  }
 });
 
 // Modify the play button event listener in createOverlay function

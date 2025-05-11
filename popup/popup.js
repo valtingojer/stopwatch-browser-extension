@@ -77,27 +77,28 @@ document.addEventListener('DOMContentLoaded', function() {
           // Save state to Chrome storage
           chrome.storage.local.set({ isRunning: true, startTime: startTime });
           
-          // Show overlay if it's hidden and start the overlay counter
-          if (!this.overlayActive) {
-            this.overlayActive = true;
-            chrome.storage.local.set({ overlayState: true });
-            
-            // Send message to content script to show and start overlay
-            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-              if (tabs[0]) {
+          // Send message to content script to start overlay counter
+          // regardless of whether it's visible or not
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]) {
+              // If overlay is hidden, show it first
+              if (!this.overlayActive) {
+                this.overlayActive = true;
+                chrome.storage.local.set({ overlayState: true });
+                
                 chrome.tabs.sendMessage(tabs[0].id, { 
                   action: 'toggleOverlay', 
                   state: true 
                 });
-                
-                // Also send message to start the overlay counter
-                chrome.tabs.sendMessage(tabs[0].id, { 
-                  action: 'startOverlayCounter',
-                  startTime: startTime
-                });
               }
-            });
-          }
+              
+              // Start the overlay counter
+              chrome.tabs.sendMessage(tabs[0].id, { 
+                action: 'startOverlayCounter',
+                startTime: startTime
+              });
+            }
+          });
         }
       },
       
@@ -112,6 +113,15 @@ document.addEventListener('DOMContentLoaded', function() {
             isRunning: false, 
             time: this.time,
             laps: this.laps
+          });
+          
+          // Send message to content script to stop overlay counter
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]) {
+              chrome.tabs.sendMessage(tabs[0].id, { 
+                action: 'stopOverlayCounter'
+              });
+            }
           });
         }
       },
@@ -252,6 +262,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const vm = vueApp._instance.proxy;
         if (!vm.isRunning) {
           vm.startTimer();
+        }
+      }
+      sendResponse({ success: true });
+    } else if (message.action === 'stopPopupTimer') {
+      // Get the Vue instance and stop the timer
+      const vueApp = document.querySelector('#app').__vue_app__;
+      if (vueApp) {
+        const vm = vueApp._instance.proxy;
+        if (vm.isRunning) {
+          vm.stopTimer();
         }
       }
       sendResponse({ success: true });
