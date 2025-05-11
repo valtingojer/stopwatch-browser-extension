@@ -90,6 +90,11 @@ function createOverlay() {
     if (!isRunning) {
       isRunning = true;
       startChronometer(counterDisplay, powerDisplay);
+      
+      // Notify popup to start its timer too
+      chrome.runtime.sendMessage({ 
+        action: 'startPopupTimer'
+      });
     }
   });
 
@@ -101,6 +106,11 @@ function createOverlay() {
       power = 0;
       counterDisplay.textContent = counter;
       powerDisplay.textContent = power;
+      
+      // Notify popup to stop its timer too
+      chrome.runtime.sendMessage({ 
+        action: 'stopPopupTimer'
+      });
     }
   });
 }
@@ -209,34 +219,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (isRunning) {
       isRunning = false;
       clearInterval(intervalId);
+      
+      // Reset counter display if available
+      const counterDisplay = document.querySelector('.counter');
+      const powerDisplay = document.querySelector('.power');
+      if (counterDisplay && powerDisplay) {
+        counter = 0;
+        power = 0;
+        counterDisplay.textContent = counter;
+        powerDisplay.textContent = power;
+      }
     }
     sendResponse({ success: true });
   }
   return true;
-});
-
-// In your createOverlay function, update the stop button event listener:
-stopBtn.addEventListener('click', () => {
-  if (isRunning) {
-    isRunning = false;
-    clearInterval(intervalId);
-    
-    // Notify popup to stop its timer too
-    chrome.runtime.sendMessage({ 
-      action: 'stopPopupTimer'
-    });
-  }
-});
-
-// Modify the play button event listener in createOverlay function
-playBtn.addEventListener('click', () => {
-  if (!isRunning) {
-    isRunning = true;
-    startChronometer(counterDisplay, powerDisplay);
-    
-    // Notify popup to start its timer too
-    chrome.runtime.sendMessage({ 
-      action: 'startPopupTimer'
-    });
-  }
 });
