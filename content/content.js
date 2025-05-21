@@ -184,10 +184,61 @@ function createOverlay() {
 }
 
 // Function to start the chronometer
-// Add this at the top with other global variables
-let audio = new Audio(chrome.runtime.getURL('assets/toc.mp3'));
+// Add these at the top with other global variables
+let audioContext = null;
+let audioSource = null;
+let gainNode = null;
+let lowPassFilter = null;
+
+// Initialize Web Audio API components
+function initAudio(frequency = 200) {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    gainNode = audioContext.createGain();
+    lowPassFilter = audioContext.createBiquadFilter();
+    
+    // Configure the filter
+    lowPassFilter.type = 'lowpass';
+    lowPassFilter.frequency.value = frequency; // Configurable frequency cutoff
+    lowPassFilter.Q.value = 1; // Quality factor
+    
+    // Set up the audio processing chain
+    gainNode.connect(lowPassFilter);
+    lowPassFilter.connect(audioContext.destination);
+  }
+}
+
+// Modify the function to play sound with specific parameters
+function playSound(pitch = 1.0, volume = 1.0, frequency) {
+  
+  if (!audioContext) initAudio(frequency);
+  else {
+    // Update the filter frequency for existing audio context
+    lowPassFilter.frequency.value = frequency;
+  }
+  
+  // Create a new audio buffer source
+  const source = audioContext.createBufferSource();
+  fetch(chrome.runtime.getURL('assets/toc.mp3'))
+    .then(response => response.arrayBuffer())
+    .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+    .then(audioBuffer => {
+      source.buffer = audioBuffer;
+      source.playbackRate.value = pitch;
+      gainNode.gain.value = volume;
+      
+      // Connect the source to our processing chain
+      source.connect(gainNode);
+      source.start(0);
+    })
+    .catch(err => console.log('Error playing sound:', err));
+}
 
 function startChronometer(counterDisplay, powerDisplay) {
+  const baseFrequency = 5000;
+  let frequencyMultiplier = 1.0;
+  let volume = 1.0;
+  let pitch = 1.0;
   intervalId = setInterval(() => {
     counter++;
     if (counter > 9) {
@@ -197,12 +248,19 @@ function startChronometer(counterDisplay, powerDisplay) {
         power = 0;
       }
       powerDisplay.textContent = power;
-      // Play sound when counter resets to 0
-      audio.currentTime = 0; // Reset audio to start
-      audio.play().catch(err => console.log('Error playing sound:', err));
+      pitch = 1.0;
+      frequencyMultiplier = 1.0;
+      volume = 1.0;
+      playSound(pitch, volume, baseFrequency * frequencyMultiplier);
+    } else if (counter === 5) { // Play at halfway point
+      // Play sound with much lower pitch and lower volume
+      pitch = 0.5;
+      frequencyMultiplier = 0.1;
+      volume = 1.5;
+      playSound(pitch, volume, baseFrequency * frequencyMultiplier);
     }
     counterDisplay.textContent = counter;
-  }, 1000 / speed); // 1000ms divided by speed
+  }, 1000 / speed);
 }
 
 // Function to toggle the overlay
