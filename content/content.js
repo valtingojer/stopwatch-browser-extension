@@ -235,7 +235,7 @@ function playSound(pitch = 1.0, volume = 1.0, frequency) {
 }
 
 function startChronometer(counterDisplay, powerDisplay) {
-  const baseFrequency = 5000;
+  const baseFrequency = 10000;
   let frequencyMultiplier = 1.0;
   let volume = 1.0;
   let pitch = 1.0;
@@ -250,13 +250,13 @@ function startChronometer(counterDisplay, powerDisplay) {
       powerDisplay.textContent = power;
       pitch = 1.0;
       frequencyMultiplier = 1.0;
-      volume = 1.0;
+      volume = 2.0;
       playSound(pitch, volume, baseFrequency * frequencyMultiplier);
     } else if (counter === 5) { // Play at halfway point
       // Play sound with much lower pitch and lower volume
       pitch = 0.5;
-      frequencyMultiplier = 0.1;
-      volume = 1.5;
+      frequencyMultiplier = 0.3;
+      volume = 2;
       playSound(pitch, volume, baseFrequency * frequencyMultiplier);
     }
     counterDisplay.textContent = counter;
